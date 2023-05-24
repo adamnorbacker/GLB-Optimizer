@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
 import { Document } from "@gltf-transform/core";
-import { TEXTURE_RESOLUTION } from "../constants";
+import {
+  TEXTURE_ALPHA_QUALITY,
+  TEXTURE_QUALITY,
+  TEXTURE_RESOLUTION,
+} from "../constants";
 
 export async function convertTextureWebP(doc: Document): Promise<void> {
   await Promise.all(
@@ -38,7 +42,10 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
         const sharp = require("sharp");
         return sharp(texture.getImage() as Uint8Array)
           .resize(width, height)
-          .webp({ quality: 50, alphaQuality: 60 })
+          .webp({
+            quality: TEXTURE_QUALITY,
+            alphaQuality: TEXTURE_ALPHA_QUALITY,
+          })
           .toBuffer()
           .then((webp: Buffer) => {
             texture.copy(
