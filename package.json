@@ -1,0 +1,32 @@
+{
+  "name": "glb-optimizer",
+  "version": "0.1.0",
+  "description": "Optimize GLB model",
+  "license": "MIT",
+  "author": "Adam Norbacker",
+  "main": "./dist/src/index.js",
+  "module": "./dist/src/module.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "glb-optimizer": "./dist/bin/index.js"
+  },
+  "scripts": {
+    "build": "rimraf dist/ && tsc -p ./tsconfig.build.json",
+    "clear": "rimraf bin/*.js && rimraf bin/*.d.ts && rimraf src/**/*.js && rimraf src/**/*.d.ts"
+  },
+  "devDependencies": {
+    "@types/draco3d": "^1.4.2",
+    "@types/node": "^20.2.3",
+    "@types/yargs": "^17.0.24",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^3.3.1",
+    "@gltf-transform/extensions": "^3.3.1",
+    "@gltf-transform/functions": "^3.3.1",
+    "draco3d": "^1.5.6",
+    "sharp": "^0.32.1",
+    "yargs": "^17.7.2"
+  }
+}
