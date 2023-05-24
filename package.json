@@ -1,7 +1,7 @@
 {
   "name": "glb-optimizer",
   "version": "0.1.0",
-  "description": "Optimize GLB model",
+  "description": "Optimize GLB models",
   "license": "MIT",
   "author": "Adam Norbacker",
   "main": "./dist/src/index.js",
