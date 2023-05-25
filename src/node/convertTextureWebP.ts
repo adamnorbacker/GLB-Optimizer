@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
 import { Document } from "@gltf-transform/core";
 import {
+  SHOULD_RESIZE,
   TEXTURE_ALPHA_QUALITY,
   TEXTURE_QUALITY,
   TEXTURE_RESOLUTION,
@@ -57,7 +58,7 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
 }
 
 const validTextureSize = (size: number, maxResolution: number) => {
-  if (size > maxResolution) {
+  if (size > maxResolution && SHOULD_RESIZE) {
     return closestTextureSize(maxResolution);
   }
   return closestTextureSize(size);
