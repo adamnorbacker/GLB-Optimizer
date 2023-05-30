@@ -1,11 +1,55 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
-import { Document } from "@gltf-transform/core";
+import { Document, vec2 } from "@gltf-transform/core";
 import {
+  FORCE_POWER_OF2,
   SHOULD_RESIZE,
   TEXTURE_ALPHA_QUALITY,
   TEXTURE_QUALITY,
   TEXTURE_RESOLUTION,
 } from "../constants";
+
+const getSize = (
+  initialWidth: number,
+  initialHeight: number,
+  targetResolution: number
+) => {
+  let width = validTextureSize(initialWidth, targetResolution);
+  let height = validTextureSize(initialHeight, targetResolution);
+
+  if (FORCE_POWER_OF2) {
+    const ratio = initialWidth / initialHeight;
+
+    // forcing a new resolution could unintentionally make textures identical in size.
+    const newRatio = width / height;
+
+    if (ratio < 1 && newRatio === 1) {
+      // Handle non-square textures
+      width = validTextureSize(initialWidth, targetResolution) * ratio;
+    } else if (ratio > 1 && newRatio === 1) {
+      height = validTextureSize(initialHeight, targetResolution) / 2;
+    }
+  } else if (!FORCE_POWER_OF2 && SHOULD_RESIZE) {
+    const ratio = Math.min(
+      targetResolution / initialWidth,
+      targetResolution / initialHeight
+    );
+
+    if (ratio > 1) {
+      return { width, height };
+    }
+
+    width = validTextureSize(
+      Math.round(initialWidth * ratio),
+      targetResolution
+    );
+    height = validTextureSize(
+      Math.round(initialHeight * ratio),
+      targetResolution
+    );
+  }
+
+  return { width, height };
+};
 
 export async function convertTextureWebP(doc: Document): Promise<void> {
   await Promise.all(
@@ -13,32 +57,23 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
       .getRoot()
       .listTextures()
       .map((texture) => {
-        const validResolution = closestTextureSize(TEXTURE_RESOLUTION);
+        const targetResolution = closestTextureSize(TEXTURE_RESOLUTION);
 
-        const initialWidth = closestTextureSize(
-          texture.getSize()?.[0] as number
+        const sizes = texture.getSize() as vec2;
+
+        const initialWidth = closestTextureSize(sizes[0]);
+        const initialHeight = closestTextureSize(sizes[1]);
+
+        const { width, height } = getSize(
+          initialWidth,
+          initialHeight,
+          targetResolution
         );
-        const initialHeight = closestTextureSize(
-          texture.getSize()?.[1] as number
-        );
 
-        const ratio = initialWidth / initialHeight;
-
-        let width = validTextureSize(initialWidth, validResolution);
-        let height = validTextureSize(initialHeight, validResolution);
-
-        // forcing a new resolution could unintentionally make textures identical in size.
-        const newRatio = width / height;
-
-        if (ratio < 1 && newRatio === 1) {
-          // Handle non-square textures
-          width = validTextureSize(initialWidth, validResolution) * ratio;
-        } else if (ratio > 1 && newRatio === 1) {
-          height = validTextureSize(initialHeight, validResolution) / 2;
+        if (width !== initialWidth || height !== initialHeight) {
+          console.log("initialSize", ...sizes);
+          console.log("New width and height:", width, height);
         }
-
-        console.log("Initial texture size:", texture.getSize());
-        console.log("New width and height:", width, height);
 
         const sharp = require("sharp");
         return sharp(texture.getImage() as Uint8Array)
@@ -58,13 +93,19 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
 }
 
 const validTextureSize = (size: number, maxResolution: number) => {
-  if (size > maxResolution && SHOULD_RESIZE) {
-    return closestTextureSize(maxResolution);
+  if (SHOULD_RESIZE) {
+    if (size > maxResolution) {
+      return closestTextureSize(maxResolution);
+    }
   }
   return closestTextureSize(size);
 };
 
 const closestTextureSize = (size: number) => {
+  if (!FORCE_POWER_OF2) {
+    return size;
+  }
+
   const powerOf2Up = nearestPowerOf2Up(size);
   const powerOf2Down = nearestPowerOf2Down(size);
   return [powerOf2Up, powerOf2Down].sort((a, b) => {

@@ -18,8 +18,6 @@ const argv = yargs(process.argv.slice(2))
   .options(flagOptions)
   .parseSync();
 
-console.log("argv.input", argv.input);
-
 fs.readdir(argv.input as string, function (error, files) {
   //handling error
   if (error) {
@@ -31,8 +29,6 @@ fs.readdir(argv.input as string, function (error, files) {
       return;
     }
 
-    console.log(file);
-
     const glb = fs.readFileSync(`${argv.input}/${file}` as string);
 
     void optimizer.node(glb).then((result) => {
@@ -41,6 +37,8 @@ fs.readdir(argv.input as string, function (error, files) {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
+
+      console.log("fileName", fileName);
 
       fs.writeFileSync(`${dir}/${fileName}`, result);
     });
