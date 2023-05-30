@@ -16,15 +16,15 @@
   },
   "devDependencies": {
     "@types/draco3d": "^1.4.2",
-    "@types/node": "^20.2.3",
+    "@types/node": "^20.2.5",
     "@types/yargs": "^17.0.24",
     "rimraf": "^5.0.1",
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@gltf-transform/core": "^3.3.1",
-    "@gltf-transform/extensions": "^3.3.1",
-    "@gltf-transform/functions": "^3.3.1",
+    "@gltf-transform/core": "^3.4.0",
+    "@gltf-transform/extensions": "^3.4.0",
+    "@gltf-transform/functions": "^3.4.0",
     "draco3d": "^1.5.6",
     "sharp": "^0.32.1",
     "yargs": "^17.7.2"
