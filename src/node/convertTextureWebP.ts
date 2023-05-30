@@ -24,9 +24,13 @@ const getSize = (
 
     if (ratio < 1 && newRatio === 1) {
       // Handle non-square textures
-      width = validTextureSize(initialWidth, targetResolution) * ratio;
+      width = Math.round(
+        validTextureSize(initialWidth, targetResolution) * ratio
+      );
     } else if (ratio > 1 && newRatio === 1) {
-      height = validTextureSize(initialHeight, targetResolution) / 2;
+      height = Math.round(
+        validTextureSize(initialHeight, targetResolution) / 2
+      );
     }
   } else if (!FORCE_POWER_OF2 && SHOULD_RESIZE) {
     const ratio = Math.min(
@@ -61,8 +65,8 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
 
         const sizes = texture.getSize() as vec2;
 
-        const initialWidth = closestTextureSize(sizes[0]);
-        const initialHeight = closestTextureSize(sizes[1]);
+        const initialWidth = sizes[0];
+        const initialHeight = sizes[1];
 
         const { width, height } = getSize(
           initialWidth,
