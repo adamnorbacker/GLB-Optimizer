@@ -11,7 +11,7 @@ import {
 const getSize = (
   initialWidth: number,
   initialHeight: number,
-  targetResolution: number
+  targetResolution: number,
 ) => {
   let width = validTextureSize(initialWidth, targetResolution);
   let height = validTextureSize(initialHeight, targetResolution);
@@ -25,17 +25,17 @@ const getSize = (
     if (ratio < 1 && newRatio === 1) {
       // Handle non-square textures
       width = Math.round(
-        validTextureSize(initialWidth, targetResolution) * ratio
+        validTextureSize(initialWidth, targetResolution) * ratio,
       );
     } else if (ratio > 1 && newRatio === 1) {
       height = Math.round(
-        validTextureSize(initialHeight, targetResolution) / 2
+        validTextureSize(initialHeight, targetResolution) / 2,
       );
     }
   } else if (!FORCE_POWER_OF2 && SHOULD_RESIZE) {
     const ratio = Math.min(
       targetResolution / initialWidth,
-      targetResolution / initialHeight
+      targetResolution / initialHeight,
     );
 
     if (ratio > 1) {
@@ -44,11 +44,11 @@ const getSize = (
 
     width = validTextureSize(
       Math.round(initialWidth * ratio),
-      targetResolution
+      targetResolution,
     );
     height = validTextureSize(
       Math.round(initialHeight * ratio),
-      targetResolution
+      targetResolution,
     );
   }
 
@@ -71,7 +71,7 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
         const { width, height } = getSize(
           initialWidth,
           initialHeight,
-          targetResolution
+          targetResolution,
         );
 
         if (width !== initialWidth || height !== initialHeight) {
@@ -79,9 +79,11 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
           console.log("New width and height:", width, height);
         }
 
+        let biggestSize = Math.max(width, height);
+
         const sharp = require("sharp");
         return sharp(texture.getImage() as Uint8Array)
-          .resize(width, height)
+          .resize(biggestSize, biggestSize)
           .webp({
             quality: TEXTURE_QUALITY,
             alphaQuality: TEXTURE_ALPHA_QUALITY,
@@ -89,10 +91,10 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
           .toBuffer()
           .then((webp: Buffer) => {
             texture.copy(
-              doc.createTexture().setMimeType("image/webp").setImage(webp)
+              doc.createTexture().setMimeType("image/webp").setImage(webp),
             );
           });
-      })
+      }),
   );
 }
 
