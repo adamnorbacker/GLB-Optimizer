@@ -79,7 +79,7 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
           console.log("New width and height:", width, height);
         }
 
-        let biggestSize = Math.max(width, height);
+        const biggestSize = Math.max(width, height);
 
         const sharp = require("sharp");
         return sharp(texture.getImage() as Uint8Array)
