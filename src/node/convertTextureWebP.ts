@@ -1,58 +1,39 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
 import { Document, vec2 } from "@gltf-transform/core";
 import {
-  FORCE_POWER_OF2,
   SHOULD_RESIZE,
   TEXTURE_ALPHA_QUALITY,
   TEXTURE_QUALITY,
-  TEXTURE_RESOLUTION,
 } from "../constants";
+
+// Returns the largest power-of-2 strictly below the given size.
+// e.g. 2000 → 1024, 1000 → 512, 500 → 256
+const largestPowerOf2Below = (size: number): number => {
+  return 1 << (31 - Math.clz32(size) - 1);
+};
 
 const getSize = (
   initialWidth: number,
   initialHeight: number,
   targetResolution: number,
 ) => {
-  let width = validTextureSize(initialWidth, targetResolution);
-  let height = validTextureSize(initialHeight, targetResolution);
-
-  if (FORCE_POWER_OF2) {
-    const ratio = initialWidth / initialHeight;
-
-    // forcing a new resolution could unintentionally make textures identical in size.
-    const newRatio = width / height;
-
-    if (ratio < 1 && newRatio === 1) {
-      // Handle non-square textures
-      width = Math.round(
-        validTextureSize(initialWidth, targetResolution) * ratio,
-      );
-    } else if (ratio > 1 && newRatio === 1) {
-      height = Math.round(
-        validTextureSize(initialHeight, targetResolution) / 2,
-      );
-    }
-  } else if (!FORCE_POWER_OF2 && SHOULD_RESIZE) {
-    const ratio = Math.min(
+  if (SHOULD_RESIZE) {
+    const scale = Math.min(
       targetResolution / initialWidth,
       targetResolution / initialHeight,
     );
 
-    if (ratio > 1) {
-      return { width, height };
+    if (scale >= 1) {
+      return { width: initialWidth, height: initialHeight };
     }
 
-    width = validTextureSize(
-      Math.round(initialWidth * ratio),
-      targetResolution,
-    );
-    height = validTextureSize(
-      Math.round(initialHeight * ratio),
-      targetResolution,
-    );
+    return {
+      width: Math.round(initialWidth * scale),
+      height: Math.round(initialHeight * scale),
+    };
   }
 
-  return { width, height };
+  return { width: initialWidth, height: initialHeight };
 };
 
 export async function convertTextureWebP(doc: Document): Promise<void> {
@@ -61,12 +42,13 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
       .getRoot()
       .listTextures()
       .map((texture) => {
-        const targetResolution = closestTextureSize(TEXTURE_RESOLUTION);
-
         const sizes = texture.getSize() as vec2;
 
         const initialWidth = sizes[0];
         const initialHeight = sizes[1];
+
+        const largestDim = Math.max(initialWidth, initialHeight);
+        const targetResolution = largestPowerOf2Below(largestDim);
 
         const { width, height } = getSize(
           initialWidth,
@@ -74,22 +56,26 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
           targetResolution,
         );
 
-        if (width !== initialWidth || height !== initialHeight) {
-          console.log("initialSize", ...sizes);
-          console.log("New width and height:", width, height);
-        }
-
-        const biggestSize = Math.max(width, height);
+        const originalSize = (texture.getImage() as Uint8Array).byteLength;
+        const textureName = texture.getName() || texture.getURI() || "unnamed";
 
         const sharp = require("sharp");
         return sharp(texture.getImage() as Uint8Array)
-          .resize(biggestSize, biggestSize)
+          .resize(width, height)
           .webp({
             quality: TEXTURE_QUALITY,
             alphaQuality: TEXTURE_ALPHA_QUALITY,
           })
           .toBuffer()
           .then((webp: Buffer) => {
+            const compressedSize = webp.byteLength;
+            const saving = (
+              ((originalSize - compressedSize) / originalSize) *
+              100
+            ).toFixed(1);
+            console.log(
+              `[texture] "${textureName}" ${initialWidth}×${initialHeight} → ${width}×${height} | ${(originalSize / 1024).toFixed(1)} KB → ${(compressedSize / 1024).toFixed(1)} KB (${saving}% smaller)`,
+            );
             texture.copy(
               doc.createTexture().setMimeType("image/webp").setImage(webp),
             );
@@ -97,32 +83,3 @@ export async function convertTextureWebP(doc: Document): Promise<void> {
       }),
   );
 }
-
-const validTextureSize = (size: number, maxResolution: number) => {
-  if (SHOULD_RESIZE) {
-    if (size > maxResolution) {
-      return closestTextureSize(maxResolution);
-    }
-  }
-  return closestTextureSize(size);
-};
-
-const closestTextureSize = (size: number) => {
-  if (!FORCE_POWER_OF2) {
-    return size;
-  }
-
-  const powerOf2Up = nearestPowerOf2Up(size);
-  const powerOf2Down = nearestPowerOf2Down(size);
-  return [powerOf2Up, powerOf2Down].sort((a, b) => {
-    return Math.abs(size - a) - Math.abs(size - b);
-  })[0] as number;
-};
-
-const nearestPowerOf2Up = (size: number) => {
-  return 2 << (31 - Math.clz32(size));
-};
-
-const nearestPowerOf2Down = (size: number) => {
-  return 1 << (31 - Math.clz32(size));
-};
